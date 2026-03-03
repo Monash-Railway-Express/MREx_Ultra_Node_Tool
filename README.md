@@ -1,4 +1,4 @@
-# MREx Ultra Node Tool
+# MREx Ultra Node Tool Client
 
 A tool specifically designed for CAN MREx to program nodes and change variables mid operation from a gui on a computer.
 
@@ -13,7 +13,7 @@ A tool specifically designed for CAN MREx to program nodes and change variables 
 
 ### 2. [Create virtual environment](https://docs.python.org/3/library/venv.html#how-venvs-work) (optional)
 
-In the MREx_Ultra_Node_Tool folder in your favourite terminal.
+All following steps will be executed from the MREx_Ultra_Node_Tool folder in your favourite terminal.
 
 `python -m venv venv`
 
@@ -21,7 +21,7 @@ In the MREx_Ultra_Node_Tool folder in your favourite terminal.
 
 If you install dependencies into a virtual environment, you should enter the venv each time you want to run the application.
 
-In the MREx_Ultra_Node_Tool folder in your favourite terminal, execute the command according to the following table. If your favourite terminal does not work, try another.
+Execute the command according to the following table. If your favourite terminal does not work, try another.
 
 <table>
 <thead>
@@ -56,18 +56,19 @@ In the MREx_Ultra_Node_Tool folder in your favourite terminal, execute the comma
 
 ### 4. Install dependencies
 
-In the MREx_Ultra_Node_Tool folder in your favourite terminal.
-
 `pip install -r requirements.txt`
 
 ### 5. Run the application
 
-### 6. Bundle the application for distribution
+`python MRExUltraNodeTool.py`
 
-In the MREx_Ultra_Node_Tool folder in your favourite terminal.
+### 6. Bundle the application for distribution
 
 `pyinstaller --onefile --windowed --clean --icon=favicon.ico --add-data "favicon.ico;." MRExUltraNodeTool.py`
 
 can skip `--clean` if only changing simple code
 
-Your nicely packaged file can then be found at MREx_Ultra_Node_Tool/dist/MRExUltraNodeTool.exe !
+Your nicely packaged file can then be found at MREx_Ultra_Node_Tool/dist/MRExUltraNodeTool.exe
+
+
+Happy MUNTing!
