@@ -43,6 +43,11 @@ class TrainProgrammer(QWidget):
         self.tabs.addTab(self.custom_send, "Send Custom message")
         layout.addWidget(self.tabs)
 
+        # Retrieve button
+        self.retrieve_btn = QPushButton("Retrieve Configuration")
+        self.retrieve_btn.clicked.connect(self.retrieve_config)
+        layout.addWidget(self.retrieve_btn)
+
         # Serial port selection
         port_layout = QHBoxLayout()
         port_layout.addWidget(QLabel("Serial Port:"))
