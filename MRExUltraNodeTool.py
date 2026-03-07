@@ -9,8 +9,7 @@ import serial.tools.list_ports
 import json
 import os
 from PyQt6.QtGui import QIcon
-from PyQt6.QtCore import Qt
-
+from urllib import request
 
 def resource_path(relative_path):
     base_path = getattr(sys, '_MEIPASS', os.path.dirname(__file__))
@@ -26,6 +25,7 @@ class TrainProgrammer(QWidget):
 
 
     def init_ui(self):
+        self.retrieve_parameters()
         layout = QVBoxLayout()
 
         # Tabs
@@ -172,6 +172,12 @@ class TrainProgrammer(QWidget):
             with open("pid_presets.json", "r") as f:
                 return json.load(f)
         return {}
+    
+    def retrieve_parameters(self):
+        req = request.Request("http://10.0.0.1/munt", method="GET")
+        res = request.urlopen(req).read()
+        data = json.loads(res)
+        print(data)
 
     def send_config(self):
         port = self.port_select.currentText()
