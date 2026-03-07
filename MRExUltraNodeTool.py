@@ -4,13 +4,13 @@ from PyQt6.QtWidgets import (
     QTabWidget
 )
 import sys
-import serial
-import serial.tools.list_ports
 import json
 import os
 from PyQt6.QtGui import QIcon
 from PyQt6.QtCore import Qt
 from urllib import request
+
+MUNT_URL = "http://10.0.0.1/munt"
 
 def resource_path(relative_path):
     base_path = getattr(sys, '_MEIPASS', os.path.dirname(__file__))
@@ -47,14 +47,6 @@ class TrainProgrammer(QWidget):
         self.retrieve_btn = QPushButton("Retrieve Configuration")
         self.retrieve_btn.clicked.connect(self.retrieve_config)
         layout.addWidget(self.retrieve_btn)
-
-        # Serial port selection
-        port_layout = QHBoxLayout()
-        port_layout.addWidget(QLabel("Serial Port:"))
-        self.port_select = QComboBox()
-        self.port_select.addItems([port.device for port in serial.tools.list_ports.comports()])
-        port_layout.addWidget(self.port_select)
-        layout.addLayout(port_layout)
 
         # Send button
         self.send_btn = QPushButton("Send Configuration")
@@ -189,13 +181,16 @@ class TrainProgrammer(QWidget):
         return {}
     
     def retrieve_config(self):
-        req = request.Request("http://10.0.0.1/munt", method="GET")
-        with request.urlopen(req) as res:
-            data = json.loads(res.read().decode("utf-8"))
-        for idx, ((p, i, d), (p_retrieved, i_retrieved, d_retrieved)) in enumerate(zip(self.traction_inputs, self.traction_retrieved), start=1):
-            p_retrieved.setText(str(data.get(f"kProportional{idx}", p.text())))
-            i_retrieved.setText(str(data.get(f"kIntegral{idx}", i.text())))
-            d_retrieved.setText(str(data.get(f"kDerivative{idx}", d.text())))
+        req = request.Request(MUNT_URL, method="GET")
+        try:
+            with request.urlopen(req) as res:
+                data = json.loads(res.read().decode("utf-8"))
+                for idx, ((p, i, d), (p_retrieved, i_retrieved, d_retrieved)) in enumerate(zip(self.traction_inputs, self.traction_retrieved), start=1):
+                    p_retrieved.setText(str(data.get(f"kProportional{idx}", p.text())))
+                    i_retrieved.setText(str(data.get(f"kIntegral{idx}", i.text())))
+                    d_retrieved.setText(str(data.get(f"kDerivative{idx}", d.text())))
+        except Exception as exception:
+            self.log.append(str(exception))
 
     def send_config(self):
         tab_index = self.tabs.currentIndex()
@@ -206,8 +201,8 @@ class TrainProgrammer(QWidget):
             traction_data = {}
             for idx, ((p, i, d), (p_retrieved, i_retrieved, d_retrieved)) in enumerate(zip(self.traction_inputs, self.traction_retrieved), start=1):
                 p_val = p.text() or p_retrieved.text()
-                i_val = i.text() or p_retrieved.text()
-                d_val = d.text() or p_retrieved.text()
+                i_val = i.text() or i_retrieved.text()
+                d_val = d.text() or d_retrieved.text()
                 traction_data[f"kProportional{idx}"] = p_val
                 traction_data[f"kIntegral{idx}"] = i_val
                 traction_data[f"kDerivative{idx}"] = d_val
@@ -227,12 +222,15 @@ class TrainProgrammer(QWidget):
 
         self.log.append(f"Sending: {message}")
 
-        req = request.Request("http://10.0.0.1/munt", message.encode("utf-8"), method="PATCH")
-        with request.urlopen(req) as res:
-            data = json.loads(res.read().decode("utf-8"))
-            unrecognised = [key for key in traction_data.keys() if key not in data]
-            self.log.append(f"Received: {data}")
-            self.log.append(f"Unrecognised parameters: {unrecognised}")
+        req = request.Request(MUNT_URL, message.encode("utf-8"), method="PATCH")
+        try:
+            with request.urlopen(req) as res:
+                data = json.loads(res.read().decode("utf-8"))
+                unrecognised = [key for key in traction_data.keys() if key not in data]
+                self.log.append(f"Received: {data}")
+                self.log.append(f"Unrecognised parameters: {unrecognised}")
+        except Exception as exception:
+            self.log.append(str(exception))
 
 
 if __name__ == "__main__":
