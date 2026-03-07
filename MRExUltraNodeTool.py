@@ -190,32 +190,28 @@ class TrainProgrammer(QWidget):
     
     def retrieve_config(self):
         req = request.Request("http://10.0.0.1/munt", method="GET")
-        res = request.urlopen(req).read()
-        data = json.loads(res)
-        for idx, (p, i, d) in enumerate(self.traction_inputs, start=1):
-            p_retrieved, i_retrieved, d_retrieved = self.traction_retrieved[idx-1]
-            p_retrieved.setText(str(data.get(f"kProportional{idx}", p)))
-            i_retrieved.setText(str(data.get(f"kIntegral{idx}", i)))
-            d_retrieved.setText(str(data.get(f"kDerivative{idx}", d)))
+        with request.urlopen(req) as res:
+            data = json.loads(res.read().decode("utf-8"))
+        for idx, ((p, i, d), (p_retrieved, i_retrieved, d_retrieved)) in enumerate(zip(self.traction_inputs, self.traction_retrieved), start=1):
+            p_retrieved.setText(str(data.get(f"kProportional{idx}", p.text())))
+            i_retrieved.setText(str(data.get(f"kIntegral{idx}", i.text())))
+            d_retrieved.setText(str(data.get(f"kDerivative{idx}", d.text())))
 
     def send_config(self):
-        port = self.port_select.currentText()
-        if not port:
-            self.log.append("⚠️ No serial port selected.")
-            return
-
         tab_index = self.tabs.currentIndex()
         message = ""
 
         if tab_index == 0:  # Traction profiles tab
             self.save_pid_presets()
-            traction_data = []
-            for idx, (p, i, d) in enumerate(self.traction_inputs, start=1):
-                p_val = p.text() or "0"
-                i_val = i.text() or "0"
-                d_val = d.text() or "0"
-                traction_data.append(f"M{idx}:P{p_val},I{i_val},D{d_val}")
-            message = "<TRACTION|" + "|".join(traction_data) + ">"
+            traction_data = {}
+            for idx, ((p, i, d), (p_retrieved, i_retrieved, d_retrieved)) in enumerate(zip(self.traction_inputs, self.traction_retrieved), start=1):
+                p_val = p.text() or p_retrieved.text()
+                i_val = i.text() or p_retrieved.text()
+                d_val = d.text() or p_retrieved.text()
+                traction_data[f"kProportional{idx}"] = p_val
+                traction_data[f"kIntegral{idx}"] = i_val
+                traction_data[f"kDerivative{idx}"] = d_val
+            message = json.dumps(traction_data)
 
         elif tab_index == 1:  # Brakes tab
             brake = self.brake.currentText()
@@ -231,12 +227,12 @@ class TrainProgrammer(QWidget):
 
         self.log.append(f"Sending: {message}")
 
-        try:
-            with serial.Serial(port, 9600, timeout=1) as ser:
-                ser.write(message.encode())
-                self.log.append("✅ Sent successfully.")
-        except Exception as e:
-            self.log.append(f"❌ Error: {e}")
+        req = request.Request("http://10.0.0.1/munt", message.encode("utf-8"), method="PATCH")
+        with request.urlopen(req) as res:
+            data = json.loads(res.read().decode("utf-8"))
+            unrecognised = [key for key in traction_data.keys() if key not in data]
+            self.log.append(f"Received: {data}")
+            self.log.append(f"Unrecognised parameters: {unrecognised}")
 
 
 if __name__ == "__main__":
