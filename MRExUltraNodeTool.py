@@ -9,6 +9,7 @@ import serial.tools.list_ports
 import json
 import os
 from PyQt6.QtGui import QIcon
+from PyQt6.QtCore import Qt
 from urllib import request
 
 def resource_path(relative_path):
@@ -25,7 +26,6 @@ class TrainProgrammer(QWidget):
 
 
     def init_ui(self):
-        self.retrieve_parameters()
         layout = QVBoxLayout()
 
         # Tabs
@@ -61,6 +61,8 @@ class TrainProgrammer(QWidget):
         self.log.setReadOnly(True)
         layout.addWidget(self.log)
 
+        self.retrieve_config()
+
         self.setLayout(layout)
 
     def create_traction_profiles_tab(self):
@@ -68,17 +70,21 @@ class TrainProgrammer(QWidget):
         grid = QGridLayout()
 
         grid.addWidget(QLabel(""), 0, 0)
-        grid.addWidget(QLabel("Proportional"), 0, 1)
-        grid.addWidget(QLabel("Integral"), 0, 2)
-        grid.addWidget(QLabel("Derivative"), 0, 3)
+        grid.addWidget(QLabel("Proportional"), 0, 1, 1, 2)
+        grid.addWidget(QLabel("Integral"), 0, 3, 1, 2)
+        grid.addWidget(QLabel("Derivative"), 0, 5, 1, 2)
 
+        self.traction_retrieved = []
         self.traction_inputs = []
         saved_values = self.load_pid_presets()
 
         for i in range(1, 6):
             grid.addWidget(QLabel(f"Mode {i}:"), i, 0)
+            p_retrieved = QLabel()
             p_input = QLineEdit()
+            i_retrieved = QLabel()
             i_input = QLineEdit()
+            d_retrieved = QLabel()
             d_input = QLineEdit()
 
             # Load saved values if available
@@ -88,9 +94,13 @@ class TrainProgrammer(QWidget):
                 i_input.setText(saved_values[mode_key].get("I", ""))
                 d_input.setText(saved_values[mode_key].get("D", ""))
 
-            grid.addWidget(p_input, i, 1)
-            grid.addWidget(i_input, i, 2)
-            grid.addWidget(d_input, i, 3)
+            grid.addWidget(p_retrieved, i, 1, Qt.AlignmentFlag.AlignRight)
+            grid.addWidget(p_input, i, 2)
+            grid.addWidget(i_retrieved, i, 3, Qt.AlignmentFlag.AlignRight)
+            grid.addWidget(i_input, i, 4)
+            grid.addWidget(d_retrieved, i, 5, Qt.AlignmentFlag.AlignRight)
+            grid.addWidget(d_input, i, 6)
+            self.traction_retrieved.append((p_retrieved, i_retrieved, d_retrieved))
             self.traction_inputs.append((p_input, i_input, d_input))
 
         tab.setLayout(grid)
@@ -173,11 +183,15 @@ class TrainProgrammer(QWidget):
                 return json.load(f)
         return {}
     
-    def retrieve_parameters(self):
+    def retrieve_config(self):
         req = request.Request("http://10.0.0.1/munt", method="GET")
         res = request.urlopen(req).read()
         data = json.loads(res)
-        print(data)
+        for idx, (p, i, d) in enumerate(self.traction_inputs, start=1):
+            p_retrieved, i_retrieved, d_retrieved = self.traction_retrieved[idx-1]
+            p_retrieved.setText(str(data.get(f"kProportional{idx}", p)))
+            i_retrieved.setText(str(data.get(f"kIntegral{idx}", i)))
+            d_retrieved.setText(str(data.get(f"kDerivative{idx}", d)))
 
     def send_config(self):
         port = self.port_select.currentText()
