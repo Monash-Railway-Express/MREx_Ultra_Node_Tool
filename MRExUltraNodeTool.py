@@ -186,9 +186,9 @@ class TrainProgrammer(QWidget):
             with request.urlopen(req) as res:
                 data = json.loads(res.read().decode("utf-8"))
                 for idx, ((p, i, d), (p_retrieved, i_retrieved, d_retrieved)) in enumerate(zip(self.traction_inputs, self.traction_retrieved), start=1):
-                    p_retrieved.setText(str(data.get(f"kProportional{idx}", p.text())))
-                    i_retrieved.setText(str(data.get(f"kIntegral{idx}", i.text())))
-                    d_retrieved.setText(str(data.get(f"kDerivative{idx}", d.text())))
+                    p_retrieved.setText(str(data.get(f"od_kp_{idx}", "Not found")))
+                    i_retrieved.setText(str(data.get(f"od_ki_{idx}", "Not found")))
+                    d_retrieved.setText(str(data.get(f"od_kd_{idx}", "Not found")))
         except Exception as exception:
             self.log.append(str(exception))
 
@@ -203,9 +203,9 @@ class TrainProgrammer(QWidget):
                 p_val = p.text() or p_retrieved.text()
                 i_val = i.text() or i_retrieved.text()
                 d_val = d.text() or d_retrieved.text()
-                traction_data[f"kProportional{idx}"] = p_val
-                traction_data[f"kIntegral{idx}"] = i_val
-                traction_data[f"kDerivative{idx}"] = d_val
+                traction_data[f"od_kp_{idx}"] = p_val
+                traction_data[f"od_ki_{idx}"] = i_val
+                traction_data[f"od_kd_{idx}"] = d_val
             message = json.dumps(traction_data)
 
         elif tab_index == 1:  # Brakes tab
